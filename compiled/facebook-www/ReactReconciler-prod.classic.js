@@ -796,7 +796,26 @@ module.exports = function ($$$config) {
                 } catch (x$11) {
                   control = x$11;
                 }
-                fn.call(Fake.prototype);
+                Fake = !1;
+                try {
+                  var prevProps = Object.getOwnPropertyDescriptor(
+                    fn.prototype,
+                    "props"
+                  );
+                  Object.defineProperty(fn.prototype, "props", {
+                    configurable: !0,
+                    set: function () {
+                      throw Error();
+                    }
+                  });
+                  Fake = !0;
+                  new fn();
+                } finally {
+                  Fake &&
+                    (void 0 !== prevProps
+                      ? Object.defineProperty(fn.prototype, "props", prevProps)
+                      : delete fn.prototype.props);
+                }
               }
             } else {
               try {
@@ -1246,7 +1265,8 @@ module.exports = function ($$$config) {
               renderLanes,
               workInProgress
             ),
-            (nextFiber = forcePropagateEntireTree ? fiber.child : null))
+            (nextFiber = fiber.child),
+            (nextFiber = null !== nextFiber ? nextFiber.sibling : null))
           : (nextFiber = fiber.child);
       if (null !== nextFiber) nextFiber.return = fiber;
       else
@@ -1795,11 +1815,11 @@ module.exports = function ($$$config) {
       case "fulfilled":
         return thenable.value;
       case "rejected":
-        throw (
-          ((thenableState = thenable.reason),
-          checkIfUseWrappedInAsyncCatch(thenableState),
-          thenableState)
-        );
+        thenableState = thenable.reason;
+        checkIfUseWrappedInAsyncCatch(thenableState);
+        if (void 0 === thenableState && !("reason" in thenable))
+          throw Error(formatProdErrorMessage(600));
+        throw thenableState;
       default:
         if ("string" === typeof thenable.status) thenable.then(noop$1, noop$1);
         else {
@@ -2661,7 +2681,7 @@ module.exports = function ($$$config) {
       : null;
   }
   function getRootForUpdatedFiber(sourceFiber) {
-    throwIfInfiniteUpdateLoopDetected();
+    throwIfInfiniteUpdateLoopDetected(!1);
     for (var parent = sourceFiber.return; null !== parent; )
       (sourceFiber = parent), (parent = sourceFiber.return);
     return 3 === sourceFiber.tag ? sourceFiber.stateNode : null;
@@ -4945,7 +4965,7 @@ module.exports = function ($$$config) {
             null !== current &&
               restoreSuspendedTreeContext(workInProgress, current)),
           (workInProgress = mountActivityChildren(workInProgress, nextProps)),
-          (workInProgress.flags |= 4096);
+          (workInProgress.flags |= 134221824);
       return workInProgress;
     }
     current = createWorkInProgress(current.child, {
@@ -5631,7 +5651,7 @@ module.exports = function ($$$config) {
               workInProgress,
               nextProps.children
             )),
-            (workInProgress.flags |= 4096));
+            (workInProgress.flags |= 134221824));
       return workInProgress;
     }
     if (showFallback)
@@ -5646,7 +5666,7 @@ module.exports = function ($$$config) {
           children: nextProps.children
         })),
         (nextProps.subtreeFlags =
-          nextFallbackChildren.subtreeFlags & 133169152),
+          nextFallbackChildren.subtreeFlags & 1206910976),
         null !== didSuspend
           ? (nextPrimaryChildren = createWorkInProgress(
               didSuspend,
@@ -6326,7 +6346,7 @@ module.exports = function ($$$config) {
                 renderLanes;
 
               )
-                (renderLanes.flags = (renderLanes.flags & -3) | 4096),
+                (renderLanes.flags = (renderLanes.flags & -3) | 134221824),
                   (renderLanes = renderLanes.sibling);
           else {
             resetHydrationState();
@@ -7000,7 +7020,7 @@ module.exports = function ($$$config) {
     renderLanes
   ) {
     if (
-      0 !== (workInProgress.mode & 32) &&
+      (enableSuspenseyImages || 0 !== (workInProgress.mode & 32)) &&
       (null === oldProps
         ? maySuspendCommit(type, newProps)
         : maySuspendCommitOnUpdate(type, oldProps, newProps))
@@ -7078,8 +7098,8 @@ module.exports = function ($$$config) {
     if (didBailout)
       for (var child$105 = completedWork.child; null !== child$105; )
         (newChildLanes |= child$105.lanes | child$105.childLanes),
-          (subtreeFlags |= child$105.subtreeFlags & 133169152),
-          (subtreeFlags |= child$105.flags & 133169152),
+          (subtreeFlags |= child$105.subtreeFlags & 1206910976),
+          (subtreeFlags |= child$105.flags & 1206910976),
           (child$105.return = completedWork),
           (child$105 = child$105.sibling);
     else
@@ -7636,6 +7656,17 @@ module.exports = function ($$$config) {
         return (
           enableViewTransition &&
             ((workInProgress.flags |= 33554432),
+            enableViewTransitionParentEnterExit &&
+              ((current = workInProgress.pendingProps),
+              (workInProgress.flags =
+                void 0 !== current.parentEnter ||
+                void 0 !== current.parentExit ||
+                null != current.onParentEnter ||
+                null != current.onParentExit ||
+                null != current.onGestureParentEnter ||
+                null != current.onGestureParentExit
+                  ? workInProgress.flags | 1073741824
+                  : workInProgress.flags & -1073741825)),
             bubbleProperties(workInProgress)),
           null
         );
@@ -8315,6 +8346,108 @@ module.exports = function ($$$config) {
         placement = placement.sibling;
       }
   }
+  function commitParentEnterViewTransitions(parent, gesture) {
+    for (parent = parent.child; null !== parent; ) {
+      if (22 !== parent.tag || null === parent.memoizedState)
+        if (30 === parent.tag) {
+          var props = parent.memoizedProps,
+            hasParentClass = void 0 !== props.parentEnter,
+            hasParentHandler = gesture
+              ? null != props.onGestureParentEnter
+              : null != props.onParentEnter;
+          if (hasParentClass || hasParentHandler) {
+            var relay = !0;
+            if (hasParentClass) {
+              hasParentClass = getViewTransitionName(props, parent.stateNode);
+              var className = getViewTransitionClassName(
+                props.default,
+                props.parentEnter
+              );
+              "none" === className
+                ? (relay = !1)
+                : (applyViewTransitionToHostInstances(
+                    parent,
+                    hasParentClass,
+                    className,
+                    null,
+                    !1
+                  ),
+                  hasParentHandler &&
+                    !gesture &&
+                    scheduleViewTransitionEvent(parent, props.onParentEnter));
+            } else
+              gesture ||
+                scheduleViewTransitionEvent(parent, props.onParentEnter);
+            relay && commitParentEnterViewTransitions(parent, gesture);
+          }
+        } else
+          0 !== (parent.subtreeFlags & 1073741824) &&
+            commitParentEnterViewTransitions(parent, gesture);
+      parent = parent.sibling;
+    }
+  }
+  function commitParentExitViewTransitions(parent, gesture) {
+    for (parent = parent.child; null !== parent; ) {
+      if (22 !== parent.tag || null === parent.memoizedState)
+        if (30 === parent.tag) {
+          var props = parent.memoizedProps,
+            hasParentClass = void 0 !== props.parentExit,
+            hasParentHandler = gesture
+              ? null != props.onGestureParentExit
+              : null != props.onParentExit;
+          if (hasParentClass || hasParentHandler) {
+            var relay = !0;
+            if (hasParentClass) {
+              hasParentClass = getViewTransitionName(props, parent.stateNode);
+              var className = getViewTransitionClassName(
+                props.default,
+                props.parentExit
+              );
+              "none" === className
+                ? (relay = !1)
+                : (applyViewTransitionToHostInstances(
+                    parent,
+                    hasParentClass,
+                    className,
+                    null,
+                    !1
+                  ),
+                  hasParentHandler &&
+                    !gesture &&
+                    scheduleViewTransitionEvent(parent, props.onParentExit));
+            } else
+              gesture ||
+                scheduleViewTransitionEvent(parent, props.onParentExit);
+            relay && commitParentExitViewTransitions(parent, gesture);
+          }
+        } else
+          0 !== (parent.subtreeFlags & 1073741824) &&
+            commitParentExitViewTransitions(parent, gesture);
+      parent = parent.sibling;
+    }
+  }
+  function restoreParentEnterOrExitViewTransitions(parent) {
+    for (parent = parent.child; null !== parent; ) {
+      if (22 !== parent.tag || null === parent.memoizedState)
+        if (30 === parent.tag) {
+          var props = parent.memoizedProps,
+            hasParentClass =
+              void 0 !== props.parentEnter || void 0 !== props.parentExit;
+          props =
+            null != props.onParentEnter ||
+            null != props.onParentExit ||
+            null != props.onGestureParentEnter ||
+            null != props.onGestureParentExit;
+          hasParentClass &&
+            restoreViewTransitionOnHostInstances(parent.child, !1);
+          (hasParentClass || props) &&
+            restoreParentEnterOrExitViewTransitions(parent);
+        } else
+          0 !== (parent.subtreeFlags & 1073741824) &&
+            restoreParentEnterOrExitViewTransitions(parent);
+      parent = parent.sibling;
+    }
+  }
   function commitEnterViewTransitions(placement, gesture) {
     if (30 === placement.tag) {
       var state = placement.stateNode,
@@ -8334,8 +8467,9 @@ module.exports = function ($$$config) {
           )
           ? (commitAppearingPairViewTransitions(placement),
             state.paired ||
-              gesture ||
-              scheduleViewTransitionEvent(placement, props.onEnter))
+              (gesture || scheduleViewTransitionEvent(placement, props.onEnter),
+              enableViewTransitionParentEnterExit &&
+                commitParentEnterViewTransitions(placement, gesture)))
           : restoreViewTransitionOnHostInstances(placement.child, !1)
         : commitAppearingPairViewTransitions(placement);
     } else if (0 !== (placement.subtreeFlags & 33554432))
@@ -8410,7 +8544,9 @@ module.exports = function ($$$config) {
               (className.paired = pair),
               appearingViewTransitions.delete(name),
               scheduleViewTransitionEvent(deletion, props.onShare))
-            : scheduleViewTransitionEvent(deletion, props.onExit)
+            : (scheduleViewTransitionEvent(deletion, props.onExit),
+              enableViewTransitionParentEnterExit &&
+                commitParentExitViewTransitions(deletion, !1))
           : restoreViewTransitionOnHostInstances(deletion.child, !1));
       null !== appearingViewTransitions &&
         commitDeletedPairViewTransitions(deletion);
@@ -8461,6 +8597,8 @@ module.exports = function ($$$config) {
     if (30 === fiber.tag)
       (fiber.stateNode.paired = null),
         restoreViewTransitionOnHostInstances(fiber.child, !1),
+        enableViewTransitionParentEnterExit &&
+          restoreParentEnterOrExitViewTransitions(fiber),
         restorePairedViewTransitions(fiber);
     else if (0 !== (fiber.subtreeFlags & 33554432))
       for (fiber = fiber.child; null !== fiber; )
@@ -8488,7 +8626,7 @@ module.exports = function ($$$config) {
     previousMeasurements,
     stopAtNestedViewTransitions
   ) {
-    if (!supportsMutation) return !0;
+    if (!supportsMutation) return !1;
     for (var inViewport = !1; null !== child; ) {
       if (5 === child.tag) {
         var instance = child.stateNode;
@@ -11430,7 +11568,10 @@ module.exports = function ($$$config) {
                 JSCompiler_inline_result,
                 !1
               );
-              if (2 !== JSCompiler_inline_result) {
+              if (
+                2 !== JSCompiler_inline_result &&
+                6 !== JSCompiler_inline_result
+              ) {
                 if (
                   workInProgressRootDidAttachPingListener &&
                   !wasRootDehydrated
@@ -11681,7 +11822,7 @@ module.exports = function ($$$config) {
       (executionContext & 2
         ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
         : executionContext & 4 && (didIncludeCommitPhaseUpdate = !0),
-      throwIfInfiniteUpdateLoopDetected());
+      throwIfInfiniteUpdateLoopDetected(!0));
   }
   function markRootSuspended(
     root,
@@ -12457,13 +12598,20 @@ module.exports = function ($$$config) {
       0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
       ensureRootIsScheduled(root);
       passiveSubtreeMask = root.pendingLanes;
-      (enableInfiniteRenderLoopDetection &&
-        (didIncludeRenderPhaseUpdate || didIncludeCommitPhaseUpdate)) ||
-      (0 !== (lanes & 261930) && 0 !== (passiveSubtreeMask & 42))
-        ? root === rootWithNestedUpdates
-          ? nestedUpdateCount++
-          : ((nestedUpdateCount = 0), (rootWithNestedUpdates = root))
-        : (nestedUpdateCount = 0);
+      0 !== (lanes & 261930) && 0 !== (passiveSubtreeMask & 42)
+        ? (root === rootWithNestedUpdates
+            ? nestedUpdateCount++
+            : ((nestedUpdateCount = 0), (rootWithNestedUpdates = root)),
+          (nestedUpdateKind = 1))
+        : enableInfiniteRenderLoopDetection &&
+            (didIncludeRenderPhaseUpdate || didIncludeCommitPhaseUpdate)
+          ? (root === rootWithNestedUpdates
+              ? nestedUpdateCount++
+              : ((nestedUpdateCount = 0), (rootWithNestedUpdates = root)),
+            (nestedUpdateKind = 2))
+          : ((nestedUpdateCount = 0),
+            (rootWithNestedUpdates = null),
+            (nestedUpdateKind = 0));
       supportsHydration && flushHydrationEvents();
       flushSyncWorkAcrossRoots_impl(0, !1);
       if (enableTransitionTracing) {
@@ -12634,7 +12782,7 @@ module.exports = function ($$$config) {
       (executionContext & 2
         ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
         : executionContext & 4 && (didIncludeCommitPhaseUpdate = !0),
-      throwIfInfiniteUpdateLoopDetected());
+      throwIfInfiniteUpdateLoopDetected(!0));
     workInProgressRoot === root &&
       (workInProgressRootRenderLanes & pingedLanes) === pingedLanes &&
       (4 === workInProgressRootExitStatus ||
@@ -12642,7 +12790,9 @@ module.exports = function ($$$config) {
         (workInProgressRootRenderLanes & 62914560) ===
           workInProgressRootRenderLanes &&
         300 > now() - globalMostRecentFallbackTime)
-        ? 0 === (executionContext & 2) && prepareFreshStack(root, 0)
+        ? 0 === (executionContext & 2)
+          ? prepareFreshStack(root, 0)
+          : (workInProgressRootPingedLanes |= pingedLanes)
         : (workInProgressRootPingedLanes |= pingedLanes),
       workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes &&
         (workInProgressSuspendedRetryLanes = 0));
@@ -12682,18 +12832,39 @@ module.exports = function ($$$config) {
     null !== retryCache && retryCache.delete(wakeable);
     retryTimedOutBoundary(boundaryFiber, retryLane);
   }
-  function throwIfInfiniteUpdateLoopDetected() {
-    if (50 < nestedUpdateCount)
-      throw (
-        ((nestedUpdateCount = 0),
-        (rootWithNestedUpdates = null),
-        enableInfiniteRenderLoopDetection &&
-          executionContext & 2 &&
-          null !== workInProgressRoot &&
-          (workInProgressRoot.errorRecoveryDisabledLanes |=
-            workInProgressRootRenderLanes),
-        Error(formatProdErrorMessage(185)))
-      );
+  function throwForcedInfiniteRenderLoopError(root, renderLanes) {
+    null !== root && (root.errorRecoveryDisabledLanes |= renderLanes);
+    throw Error(formatProdErrorMessage(598));
+  }
+  function throwIfInfiniteUpdateLoopDetected(
+    isFromInfiniteRenderLoopDetectionInstrumentation
+  ) {
+    if (50 < nestedUpdateCount) {
+      nestedUpdateCount = 0;
+      rootWithNestedUpdates = null;
+      var updateKind = nestedUpdateKind;
+      nestedUpdateKind = 0;
+      if (enableInfiniteRenderLoopDetection)
+        if (1 === updateKind)
+          if (
+            isFromInfiniteRenderLoopDetectionInstrumentation ||
+            0 !== (executionContext & 2)
+          )
+            enableInfiniteRenderLoopDetectionForceThrow &&
+              throwForcedInfiniteRenderLoopError(
+                workInProgressRoot,
+                workInProgressRootRenderLanes
+              );
+          else throw Error(formatProdErrorMessage(185));
+        else
+          2 === updateKind &&
+            enableInfiniteRenderLoopDetectionForceThrow &&
+            throwForcedInfiniteRenderLoopError(
+              workInProgressRoot,
+              workInProgressRootRenderLanes
+            );
+      else throw Error(formatProdErrorMessage(185));
+    }
   }
   function scheduleCallback(priorityLevel, callback) {
     return scheduleCallback$3(priorityLevel, callback);
@@ -12775,7 +12946,7 @@ module.exports = function ($$$config) {
         (workInProgress.flags = 0),
         (workInProgress.subtreeFlags = 0),
         (workInProgress.deletions = null));
-    workInProgress.flags = current.flags & 133169152;
+    workInProgress.flags = current.flags & 1206910976;
     workInProgress.childLanes = current.childLanes;
     workInProgress.lanes = current.lanes;
     workInProgress.child = current.child;
@@ -12797,7 +12968,7 @@ module.exports = function ($$$config) {
     return workInProgress;
   }
   function resetWorkInProgress(workInProgress, renderLanes) {
-    workInProgress.flags &= 133169154;
+    workInProgress.flags &= 1206910978;
     var current = workInProgress.alternate;
     null === current
       ? ((workInProgress.childLanes = 0),
@@ -12911,7 +13082,8 @@ module.exports = function ($$$config) {
         case REACT_VIEW_TRANSITION_TYPE:
           if (enableViewTransition)
             return (
-              (type = mode | 32),
+              (type = mode),
+              enableSuspenseyImages || (type |= 32),
               (type = createFiber(30, pendingProps, key, type)),
               (type.elementType = REACT_VIEW_TRANSITION_TYPE),
               (type.lanes = lanes),
@@ -13202,6 +13374,8 @@ module.exports = function ($$$config) {
       dynamicFeatureFlags.enableEffectEventMutationPhase,
     enableInfiniteRenderLoopDetection =
       dynamicFeatureFlags.enableInfiniteRenderLoopDetection,
+    enableInfiniteRenderLoopDetectionForceThrow =
+      dynamicFeatureFlags.enableInfiniteRenderLoopDetectionForceThrow,
     enableNoCloningMemoCache = dynamicFeatureFlags.enableNoCloningMemoCache,
     enableObjectFiber = dynamicFeatureFlags.enableObjectFiber,
     enableRetryLaneExpiration = dynamicFeatureFlags.enableRetryLaneExpiration,
@@ -13209,11 +13383,14 @@ module.exports = function ($$$config) {
     retryLaneExpirationMs = dynamicFeatureFlags.retryLaneExpirationMs,
     syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
     transitionLaneExpirationMs = dynamicFeatureFlags.transitionLaneExpirationMs,
+    enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
     enableViewTransition = dynamicFeatureFlags.enableViewTransition,
     enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
     enableFragmentRefsTextNodes =
       dynamicFeatureFlags.enableFragmentRefsTextNodes,
     enableParallelTransitions = dynamicFeatureFlags.enableParallelTransitions,
+    enableViewTransitionParentEnterExit =
+      dynamicFeatureFlags.enableViewTransitionParentEnterExit,
     REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
     REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
     REACT_PORTAL_TYPE = Symbol.for("react.portal"),
@@ -14085,6 +14262,7 @@ module.exports = function ($$$config) {
     pendingDidIncludeRenderPhaseUpdate = !1,
     nestedUpdateCount = 0,
     rootWithNestedUpdates = null,
+    nestedUpdateKind = 0,
     createFiber = enableObjectFiber
       ? createFiberImplObject
       : createFiberImplClass;
@@ -14448,7 +14626,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-93882bd4-20260304"
+      reconcilerVersion: "19.3.0-www-classic-3508aee6-20260702"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
