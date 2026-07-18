@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<6e219580880661b6c12495b25c1ec037>>
+ * @generated SignedSource<<0bca363f109163bf7a50589c6250c666>>
  */
 
 "use strict";
@@ -2071,24 +2071,26 @@ __DEV__ &&
       return kind;
     }
     function addObjectToProperties(object, properties, indent, prefix) {
-      var addedProperties = 0,
-        key;
-      for (key in object)
-        if (
-          hasOwnProperty.call(object, key) &&
-          "_" !== key[0] &&
-          (addedProperties++,
-          addValueToProperties(key, object[key], properties, indent, prefix),
-          100 <= addedProperties)
-        ) {
-          properties.push([
-            prefix +
-              "\u00a0\u00a0".repeat(indent) +
-              "Only 100 properties are shown. React will not log more properties of this object.",
-            ""
-          ]);
-          break;
-        }
+      if (!ArrayBuffer.isView(object)) {
+        var addedProperties = 0,
+          key;
+        for (key in object)
+          if (
+            hasOwnProperty.call(object, key) &&
+            "_" !== key[0] &&
+            (addedProperties++,
+            addValueToProperties(key, object[key], properties, indent, prefix),
+            100 <= addedProperties)
+          ) {
+            properties.push([
+              prefix +
+                "\u00a0\u00a0".repeat(indent) +
+                "Only 100 properties are shown. React will not log more properties of this object.",
+              ""
+            ]);
+            break;
+          }
+      }
     }
     function readReactElementTypeof(value) {
       return "$$typeof" in value && hasOwnProperty.call(value, "$$typeof")
@@ -2168,15 +2170,23 @@ __DEV__ &&
               return;
             }
             typeName = Object.prototype.toString.call(value);
-            propKey = typeName.slice(8, typeName.length - 1);
-            if ("Array" === propKey)
+            typeName = typeName.slice(8, typeName.length - 1);
+            if (ArrayBuffer.isView(value)) {
+              value = value.length;
+              value =
+                "number" === typeof value
+                  ? typeName + "(" + value + ")"
+                  : typeName;
+              break;
+            }
+            if ("Array" === typeName)
               if (
-                ((typeName = 100 < value.length),
+                ((propKey = 100 < value.length),
                 (key = getArrayKind(value)),
                 2 === key || 0 === key)
               ) {
                 value = JSON.stringify(
-                  typeName ? value.slice(0, 100).concat("\u2026") : value
+                  propKey ? value.slice(0, 100).concat("\u2026") : value
                 );
                 break;
               } else if (3 === key) {
@@ -2189,15 +2199,15 @@ __DEV__ &&
                   propertyName < value.length && 100 > propertyName;
                   propertyName++
                 )
-                  (propKey = value[propertyName]),
+                  (typeName = value[propertyName]),
                     addValueToProperties(
-                      propKey[0],
-                      propKey[1],
+                      typeName[0],
+                      typeName[1],
                       properties,
                       indent + 1,
                       prefix
                     );
-                typeName &&
+                propKey &&
                   addValueToProperties(
                     (100).toString(),
                     "\u2026",
@@ -2207,7 +2217,7 @@ __DEV__ &&
                   );
                 return;
               }
-            if ("Promise" === propKey) {
+            if ("Promise" === typeName) {
               if ("fulfilled" === value.status) {
                 if (
                   ((typeName = properties.length),
@@ -2247,13 +2257,13 @@ __DEV__ &&
               ]);
               return;
             }
-            "Object" === propKey &&
-              (typeName = Object.getPrototypeOf(value)) &&
-              "function" === typeof typeName.constructor &&
-              (propKey = typeName.constructor.name);
+            "Object" === typeName &&
+              (propKey = Object.getPrototypeOf(value)) &&
+              "function" === typeof propKey.constructor &&
+              (typeName = propKey.constructor.name);
             properties.push([
               prefix + "\u00a0\u00a0".repeat(indent) + propertyName,
-              "Object" === propKey ? (3 > indent ? "" : "\u2026") : propKey
+              "Object" === typeName ? (3 > indent ? "" : "\u2026") : typeName
             ]);
             3 > indent &&
               addObjectToProperties(value, properties, indent + 1, prefix);
@@ -4088,19 +4098,14 @@ __DEV__ &&
           processRootScheduleInMicrotask();
           return null;
         });
-      supportsMicrotasks
-        ? scheduleMicrotask(function () {
-            (executionContext & (RenderContext | CommitContext)) !== NoContext
-              ? scheduleCallback$3(
-                  ImmediatePriority,
-                  processRootScheduleInImmediateTask
-                )
-              : processRootScheduleInMicrotask();
-          })
-        : scheduleCallback$3(
-            ImmediatePriority,
-            processRootScheduleInImmediateTask
-          );
+      scheduleMicrotask(function () {
+        (executionContext & (RenderContext | CommitContext)) !== NoContext
+          ? scheduleCallback$3(
+              ImmediatePriority,
+              processRootScheduleInImmediateTask
+            )
+          : processRootScheduleInMicrotask();
+      });
     }
     function requestTransitionLane() {
       if (0 === currentEventTransitionLane) {
@@ -4530,7 +4535,7 @@ __DEV__ &&
           return (
             (newIndex = newIndex.index),
             newIndex < lastPlacedIndex
-              ? ((newFiber.flags |= 134217730), lastPlacedIndex)
+              ? ((newFiber.flags |= 2), lastPlacedIndex)
               : newIndex
           );
         newFiber.flags |= 134217730;
@@ -8239,7 +8244,11 @@ __DEV__ &&
       renderLanes
     ) {
       Component = Component.render;
-      var ref = workInProgress.ref;
+      var resolvedRender = resolveTypeForHotReloading(Component);
+      resolvedRender !== Component &&
+        ((Component = resolvedRender),
+        null !== current && (didReceiveUpdate = !0));
+      resolvedRender = workInProgress.ref;
       if ("ref" in nextProps) {
         var propsWithoutRef = {};
         for (var key in nextProps)
@@ -8252,7 +8261,7 @@ __DEV__ &&
         workInProgress,
         Component,
         propsWithoutRef,
-        ref,
+        resolvedRender,
         renderLanes
       );
       markComponentRenderStopped();
@@ -8281,7 +8290,7 @@ __DEV__ &&
           null === Component.compare
         )
           return (
-            (Component = resolveFunctionForHotReloading(type)),
+            (Component = resolveTypeForHotReloading(type)),
             (workInProgress.tag = 15),
             (workInProgress.type = Component),
             validateFunctionComponentInDev(workInProgress, type),
@@ -9803,7 +9812,7 @@ __DEV__ &&
     function beginWork(current, workInProgress, renderLanes) {
       if (workInProgress._debugNeedsRemount && null !== current) {
         renderLanes = createFiberFromTypeAndProps(
-          workInProgress.type,
+          resolveTypeForHotReloading(workInProgress.elementType),
           workInProgress.key,
           workInProgress.pendingProps,
           workInProgress._debugOwner || null,
@@ -9870,6 +9879,7 @@ __DEV__ &&
             resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress),
             (returnFiber = workInProgress.pendingProps),
             (current = resolveLazy(prevSibling)),
+            (current = resolveTypeForHotReloading(current)),
             (workInProgress.type = current),
             "function" === typeof current)
           )
@@ -9879,8 +9889,6 @@ __DEV__ &&
                   returnFiber
                 )),
                 (workInProgress.tag = 1),
-                (workInProgress.type = current =
-                  resolveFunctionForHotReloading(current)),
                 (workInProgress = updateClassComponent(
                   null,
                   workInProgress,
@@ -9890,8 +9898,6 @@ __DEV__ &&
                 )))
               : ((workInProgress.tag = 0),
                 validateFunctionComponentInDev(workInProgress, current),
-                (workInProgress.type = current =
-                  resolveFunctionForHotReloading(current)),
                 (workInProgress = updateFunctionComponent(
                   null,
                   workInProgress,
@@ -9906,8 +9912,6 @@ __DEV__ &&
                 prevSibling === REACT_FORWARD_REF_TYPE)
               ) {
                 workInProgress.tag = 11;
-                workInProgress.type = current =
-                  resolveForwardRefForHotReloading(current);
                 workInProgress = updateForwardRef(
                   null,
                   workInProgress,
@@ -12304,11 +12308,7 @@ __DEV__ &&
     function commitBeforeMutationEffects(root, firstChild, committedLanes) {
       root = (committedLanes & 335544064) === committedLanes;
       nextEffect = firstChild;
-      for (
-        firstChild = root ? 9270 : BeforeMutationMask;
-        null !== nextEffect;
-
-      ) {
+      for (firstChild = root ? 9270 : 1024; null !== nextEffect; ) {
         committedLanes = nextEffect;
         if (root) {
           var deletions = committedLanes.deletions;
@@ -12361,23 +12361,6 @@ __DEV__ &&
           case 0:
           case 11:
           case 15:
-            if (
-              !enableEffectEventMutationPhase &&
-              0 !== (flags & 4) &&
-              ((isViewTransitionEligible = finishedWork.updateQueue),
-              (isViewTransitionEligible =
-                null !== isViewTransitionEligible
-                  ? isViewTransitionEligible.events
-                  : null),
-              null !== isViewTransitionEligible)
-            )
-              for (
-                finishedWork = 0;
-                finishedWork < isViewTransitionEligible.length;
-                finishedWork++
-              )
-                (current = isViewTransitionEligible[finishedWork]),
-                  (current.ref.impl = current.nextImpl);
             break;
           case 1:
             0 !== (flags & 1024) &&
@@ -12980,7 +12963,6 @@ __DEV__ &&
         case 14:
         case 15:
           if (
-            enableEffectEventMutationPhase &&
             flags & 4 &&
             ((current = finishedWork.updateQueue),
             (current = null !== current ? current.events : null),
@@ -16316,12 +16298,8 @@ __DEV__ &&
           workInProgressUpdateTask
         );
       shouldStartViewTransition = !1;
-      suspendedCommitReason =
-        0 !== (finishedWork.flags & (BeforeMutationMask | 13878));
-      if (
-        0 !== (finishedWork.subtreeFlags & (BeforeMutationMask | 13878)) ||
-        suspendedCommitReason
-      ) {
+      suspendedCommitReason = 0 !== (finishedWork.flags & 13878);
+      if (0 !== (finishedWork.subtreeFlags & 13878) || suspendedCommitReason) {
         suspendedCommitReason = ReactSharedInternals.T;
         ReactSharedInternals.T = null;
         completedRenderEndTime = currentUpdatePriority;
@@ -17199,30 +17177,15 @@ __DEV__ &&
           );
         });
     }
-    function resolveFunctionForHotReloading(type) {
+    function resolveTypeForHotReloading(type) {
       if (null === resolveFamily) return type;
       var family = resolveFamily(type);
       return void 0 === family ? type : family.current;
     }
-    function resolveForwardRefForHotReloading(type) {
-      if (null === resolveFamily) return type;
-      var family = resolveFamily(type);
-      return void 0 === family
-        ? null !== type &&
-          void 0 !== type &&
-          "function" === typeof type.render &&
-          ((family = resolveFunctionForHotReloading(type.render)),
-          type.render !== family)
-          ? ((family = { $$typeof: REACT_FORWARD_REF_TYPE, render: family }),
-            void 0 !== type.displayName &&
-              (family.displayName = type.displayName),
-            family)
-          : type
-        : family.current;
-    }
     function isCompatibleFamilyForHotReloading(fiber, element) {
       if (null === resolveFamily) return !1;
-      var prevType = fiber.elementType;
+      var resolve = resolveFamily,
+        prevType = fiber.elementType;
       element = element.type;
       var needsCompareFamilies = !1,
         $$typeofNextType =
@@ -17256,8 +17219,8 @@ __DEV__ &&
           return !1;
       }
       return needsCompareFamilies &&
-        ((fiber = resolveFamily(prevType)),
-        void 0 !== fiber && fiber === resolveFamily(element))
+        ((fiber = resolve(prevType)),
+        void 0 !== fiber && fiber === resolve(element))
         ? !0
         : !1;
     }
@@ -17277,39 +17240,58 @@ __DEV__ &&
           alternate = _fiber.alternate,
           child = _fiber.child,
           sibling = _fiber.sibling,
-          tag = _fiber.tag;
-        _fiber = _fiber.type;
-        var candidateType = null;
+          tag = _fiber.tag,
+          type = _fiber.type,
+          elementType = _fiber.elementType,
+          candidateType = null;
+        _fiber = null;
         switch (tag) {
           case 0:
-          case 15:
           case 1:
-            candidateType = _fiber;
+            candidateType = type;
+            break;
+          case 15:
+            candidateType = type;
+            _fiber = elementType;
+            break;
+          case 14:
+            _fiber = elementType;
             break;
           case 11:
-            candidateType = _fiber.render;
+            (candidateType = type.render), (_fiber = elementType);
         }
         if (null === resolveFamily)
           throw Error("Expected resolveFamily to be set during hot reload.");
-        var needsRender = !1;
-        _fiber = !1;
+        var resolve = resolveFamily;
+        type = elementType = !1;
         null !== candidateType &&
-          ((candidateType = resolveFamily(candidateType)),
+          ((candidateType = resolve(candidateType)),
           void 0 !== candidateType &&
             (staleFamilies.has(candidateType)
-              ? (_fiber = !0)
+              ? (type = !0)
               : updatedFamilies.has(candidateType) &&
-                (1 === tag ? (_fiber = !0) : (needsRender = !0))));
+                (1 === tag ? (type = !0) : (elementType = !0))));
+        type ||
+          null === _fiber ||
+          ((tag = resolve(_fiber)),
+          void 0 !== tag && staleFamilies.has(tag)
+            ? (type = !0)
+            : "object" === typeof _fiber &&
+              _fiber.$$typeof === REACT_LAZY_TYPE &&
+              ((tag = _fiber._payload),
+              1 === tag._status &&
+                ((tag = resolve(tag._result.default)),
+                void 0 !== tag && staleFamilies.has(tag) && (type = !0))));
         null !== failedBoundaries &&
           (failedBoundaries.has(fiber) ||
             (null !== alternate && failedBoundaries.has(alternate))) &&
-          (_fiber = !0);
-        _fiber && (fiber._debugNeedsRemount = !0);
-        if (_fiber || needsRender)
+          (type = !0);
+        type && (fiber._debugNeedsRemount = !0);
+        if (type || elementType)
           (alternate = enqueueConcurrentRenderForLane(fiber, 2)),
             null !== alternate && scheduleUpdateOnFiber(alternate, fiber, 2);
         null === child ||
-          _fiber ||
+          type ||
           scheduleFibersWithFamiliesRecursively(
             child,
             updatedFamilies,
@@ -17456,13 +17438,10 @@ __DEV__ &&
       switch (workInProgress.tag) {
         case 0:
         case 15:
-          workInProgress.type = resolveFunctionForHotReloading(current.type);
-          break;
+        case 14:
         case 1:
-          workInProgress.type = resolveFunctionForHotReloading(current.type);
-          break;
         case 11:
-          workInProgress.type = resolveForwardRefForHotReloading(current.type);
+          workInProgress.type = resolveTypeForHotReloading(current.type);
       }
       return workInProgress;
     }
@@ -17511,14 +17490,13 @@ __DEV__ &&
       mode,
       lanes
     ) {
-      var fiberTag = 0,
-        resolvedType = type;
-      if ("function" === typeof type)
-        shouldConstruct(type) && (fiberTag = 1),
-          (resolvedType = resolveFunctionForHotReloading(resolvedType));
-      else if ("string" === typeof type) fiberTag = 5;
+      var fiberTag = 0;
+      var resolvedType = resolveTypeForHotReloading(type);
+      if ("function" === typeof resolvedType)
+        shouldConstruct(resolvedType) && (fiberTag = 1);
+      else if ("string" === typeof resolvedType) fiberTag = 5;
       else
-        a: switch (type) {
+        a: switch (resolvedType) {
           case REACT_ACTIVITY_TYPE:
             return (
               (key = createFiber(31, pendingProps, key, mode)),
@@ -17583,8 +17561,8 @@ __DEV__ &&
               key
             );
           default:
-            if ("object" === typeof type && null !== type)
-              switch (type.$$typeof) {
+            if ("object" === typeof resolvedType && null !== resolvedType)
+              switch (resolvedType.$$typeof) {
                 case REACT_CONTEXT_TYPE:
                   fiberTag = 10;
                   break a;
@@ -17593,7 +17571,6 @@ __DEV__ &&
                   break a;
                 case REACT_FORWARD_REF_TYPE:
                   fiberTag = 11;
-                  resolvedType = resolveForwardRefForHotReloading(resolvedType);
                   break a;
                 case REACT_MEMO_TYPE:
                   fiberTag = 14;
@@ -18231,8 +18208,6 @@ __DEV__ &&
       ReactSharedInternals =
         React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
       alwaysThrottleRetries = dynamicFlagsUntyped.alwaysThrottleRetries,
-      enableEffectEventMutationPhase =
-        dynamicFlagsUntyped.enableEffectEventMutationPhase,
       enableObjectFiber = dynamicFlagsUntyped.enableObjectFiber,
       passChildrenWhenCloningPersistedNodes =
         dynamicFlagsUntyped.passChildrenWhenCloningPersistedNodes,
@@ -18916,7 +18891,6 @@ __DEV__ &&
     var isInsideEventHandler = !1,
       eventQueue = null,
       _enableNativeEventTargetEventDispatching = null,
-      BeforeMutationMask = 1024 | (enableEffectEventMutationPhase ? 0 : 4),
       scheduleCallback$3 = Scheduler.unstable_scheduleCallback,
       cancelCallback$1 = Scheduler.unstable_cancelCallback,
       shouldYield = Scheduler.unstable_shouldYield,
@@ -21194,9 +21168,6 @@ __DEV__ &&
         _currentValue2: NotPendingTransition,
         _threadCount: 0
       },
-      supportsMicrotasks =
-        "undefined" !== typeof RN$enableMicrotasksInReact &&
-        !!RN$enableMicrotasksInReact,
       scheduleMicrotask =
         "function" === typeof queueMicrotask ? queueMicrotask : scheduleTimeout;
     (function (
@@ -21270,10 +21241,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-3508aee6-20260702",
+        version: "19.3.0-native-fb-172742b4-20260716",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-3508aee6-20260702"
+        reconcilerVersion: "19.3.0-native-fb-172742b4-20260716"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

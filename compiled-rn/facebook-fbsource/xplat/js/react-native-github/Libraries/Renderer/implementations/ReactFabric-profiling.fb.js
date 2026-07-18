@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<4d0de22fcbd487941895c3257ee4c3d7>>
+ * @generated SignedSource<<98269e7db5e5aa3df1bf71912ac6bc69>>
  */
 
 "use strict";
@@ -24,8 +24,6 @@ var ReactNativePrivateInterface = require("react-native/Libraries/ReactPrivate/R
   ReactSharedInternals =
     React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
   alwaysThrottleRetries = dynamicFlagsUntyped.alwaysThrottleRetries,
-  enableEffectEventMutationPhase =
-    dynamicFlagsUntyped.enableEffectEventMutationPhase,
   enableObjectFiber = dynamicFlagsUntyped.enableObjectFiber,
   passChildrenWhenCloningPersistedNodes =
     dynamicFlagsUntyped.passChildrenWhenCloningPersistedNodes,
@@ -1456,8 +1454,7 @@ function dispatchEvent(target, topLevelType, nativeEventParam) {
     }
   });
 }
-var BeforeMutationMask = 1024 | (enableEffectEventMutationPhase ? 0 : 4),
-  scheduleCallback$3 = Scheduler.unstable_scheduleCallback,
+var scheduleCallback$3 = Scheduler.unstable_scheduleCallback,
   cancelCallback$1 = Scheduler.unstable_cancelCallback,
   shouldYield = Scheduler.unstable_shouldYield,
   requestPaint = Scheduler.unstable_requestPaint,
@@ -3028,16 +3025,14 @@ function performSyncWorkOnRoot(root, lanes) {
   performWorkOnRoot(root, lanes, !0);
 }
 function scheduleImmediateRootScheduleTask() {
-  supportsMicrotasks
-    ? scheduleMicrotask(function () {
-        0 !== (executionContext & 6)
-          ? scheduleCallback$3(
-              ImmediatePriority,
-              processRootScheduleInImmediateTask
-            )
-          : processRootScheduleInMicrotask();
-      })
-    : scheduleCallback$3(ImmediatePriority, processRootScheduleInImmediateTask);
+  scheduleMicrotask(function () {
+    0 !== (executionContext & 6)
+      ? scheduleCallback$3(
+          ImmediatePriority,
+          processRootScheduleInImmediateTask
+        )
+      : processRootScheduleInMicrotask();
+  });
 }
 function requestTransitionLane() {
   if (0 === currentEventTransitionLane) {
@@ -3381,7 +3376,7 @@ function createChildReconciler(shouldTrackSideEffects) {
       return (
         (newIndex = newIndex.index),
         newIndex < lastPlacedIndex
-          ? ((newFiber.flags |= 134217730), lastPlacedIndex)
+          ? ((newFiber.flags |= 2), lastPlacedIndex)
           : newIndex
       );
     newFiber.flags |= 134217730;
@@ -9588,7 +9583,7 @@ function isHydratingParent(current, finishedWork) {
 function commitBeforeMutationEffects(root, firstChild, committedLanes) {
   root = (committedLanes & 335544064) === committedLanes;
   nextEffect = firstChild;
-  for (firstChild = root ? 9270 : BeforeMutationMask; null !== nextEffect; ) {
+  for (firstChild = root ? 9270 : 1024; null !== nextEffect; ) {
     committedLanes = nextEffect;
     if (root) {
       var deletions = committedLanes.deletions;
@@ -9637,20 +9632,6 @@ function commitBeforeMutationEffects_complete(
       case 0:
       case 11:
       case 15:
-        if (
-          !enableEffectEventMutationPhase &&
-          0 !== (flags & 4) &&
-          ((current = fiber.updateQueue),
-          (current = null !== current ? current.events : null),
-          null !== current)
-        )
-          for (
-            isViewTransitionEligible = 0;
-            isViewTransitionEligible < current.length;
-            isViewTransitionEligible++
-          )
-            (flags = current[isViewTransitionEligible]),
-              (flags.ref.impl = flags.nextImpl);
         break;
       case 1:
         if (0 !== (flags & 1024) && null !== current) {
@@ -10185,7 +10166,6 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
     case 14:
     case 15:
       if (
-        enableEffectEventMutationPhase &&
         flags & 4 &&
         ((current = finishedWork.updateQueue),
         (current = null !== current ? current.events : null),
@@ -12993,12 +12973,8 @@ function commitRoot(
         "secondary-light"
       ));
   shouldStartViewTransition = !1;
-  suspendedCommitReason =
-    0 !== (finishedWork.flags & (BeforeMutationMask | 13878));
-  if (
-    0 !== (finishedWork.subtreeFlags & (BeforeMutationMask | 13878)) ||
-    suspendedCommitReason
-  ) {
+  suspendedCommitReason = 0 !== (finishedWork.flags & 13878);
+  if (0 !== (finishedWork.subtreeFlags & 13878) || suspendedCommitReason) {
     suspendedCommitReason = ReactSharedInternals.T;
     ReactSharedInternals.T = null;
     completedRenderEndTime = currentUpdatePriority;
@@ -13717,10 +13693,10 @@ function createFiberFromTypeAndProps(
 ) {
   var fiberTag = 0;
   owner = type;
-  if ("function" === typeof type) shouldConstruct(type) && (fiberTag = 1);
-  else if ("string" === typeof type) fiberTag = 5;
+  if ("function" === typeof owner) shouldConstruct(owner) && (fiberTag = 1);
+  else if ("string" === typeof owner) fiberTag = 5;
   else
-    a: switch (type) {
+    a: switch (owner) {
       case REACT_ACTIVITY_TYPE:
         return (
           (type = createFiber(31, pendingProps, key, mode)),
@@ -13773,8 +13749,8 @@ function createFiberFromTypeAndProps(
           type
         );
       default:
-        if ("object" === typeof type && null !== type)
-          switch (type.$$typeof) {
+        if ("object" === typeof owner && null !== owner)
+          switch (owner.$$typeof) {
             case REACT_CONTEXT_TYPE:
               fiberTag = 10;
               break a;
@@ -14325,9 +14301,6 @@ var HostTransitionContext = {
     _currentValue2: null,
     _threadCount: 0
   },
-  supportsMicrotasks =
-    "undefined" !== typeof RN$enableMicrotasksInReact &&
-    !!RN$enableMicrotasksInReact,
   scheduleMicrotask =
     "function" === typeof queueMicrotask ? queueMicrotask : scheduleTimeout;
 getFiberCurrentPropsFromNode$1 = function (instance) {
@@ -14400,16 +14373,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1686 = {
+  internals$jscomp$inline_1680 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-3508aee6-20260702",
+    version: "19.3.0-native-fb-172742b4-20260716",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-3508aee6-20260702"
+    reconcilerVersion: "19.3.0-native-fb-172742b4-20260716"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1686.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1686.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1680.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1680.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$184 = 0;
     31 > index$184;
@@ -14421,20 +14394,20 @@ internals$jscomp$inline_1686.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1686.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1680.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2080 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2074 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2080.isDisabled &&
-    hook$jscomp$inline_2080.supportsFiber
+    !hook$jscomp$inline_2074.isDisabled &&
+    hook$jscomp$inline_2074.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2080.inject(
-        internals$jscomp$inline_1686
+      (rendererID = hook$jscomp$inline_2074.inject(
+        internals$jscomp$inline_1680
       )),
-        (injectedHook = hook$jscomp$inline_2080);
+        (injectedHook = hook$jscomp$inline_2074);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

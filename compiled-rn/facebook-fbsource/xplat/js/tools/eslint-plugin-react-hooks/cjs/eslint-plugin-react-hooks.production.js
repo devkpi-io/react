@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<4632eca3603ca36a80a28892bae651db>>
+ * @generated SignedSource<<88d91ea7b27cb73d1839f96201bfba34>>
  */
 
 'use strict';
@@ -23288,7 +23288,9 @@ function lowerStatement(builder, stmtPath, label = null) {
         case 'VariableDeclaration': {
             const stmt = stmtPath;
             const nodeKind = stmt.node.kind;
-            if (nodeKind === 'var') {
+            if (nodeKind === 'var' ||
+                nodeKind === 'using' ||
+                nodeKind === 'await using') {
                 builder.recordError(new CompilerErrorDetail({
                     reason: `(BuildHIR::lowerStatement) Handle ${nodeKind} kinds in VariableDeclaration`,
                     category: ErrorCategory.Todo,
@@ -25338,7 +25340,7 @@ function lowerJsxElementName(builder, exprPath) {
     const exprLoc = (_a = exprNode.loc) !== null && _a !== void 0 ? _a : GeneratedSource;
     if (exprPath.isJSXIdentifier()) {
         const tag = exprPath.node.name;
-        if (tag.match(/^[A-Z]/)) {
+        if (!tag.match(/^[a-z]/)) {
             const kind = getLoadKind(builder, exprPath);
             return lowerValueToTemporary(builder, {
                 kind: kind,
@@ -31406,6 +31408,13 @@ function defaultModuleTypeProvider(moduleName) {
                         restParam: Effect.Read,
                         returnType: { kind: 'type', name: 'Any' },
                         knownIncompatible: `TanStack Virtual's \`useVirtualizer()\` API returns functions that cannot be memoized safely`,
+                    },
+                    useWindowVirtualizer: {
+                        kind: 'hook',
+                        positionalParams: [],
+                        restParam: Effect.Read,
+                        returnType: { kind: 'type', name: 'Any' },
+                        knownIncompatible: `TanStack Virtual's \`useWindowVirtualizer()\` API returns functions that cannot be memoized safely`,
                     },
                 },
             };
